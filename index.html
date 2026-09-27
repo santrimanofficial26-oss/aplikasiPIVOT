@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>PIVOT — Performance & Inventory Operations Tracker</title>
+    <meta name="description" content="Satu platform terintegrasi untuk memantau target, penjualan, insentif, inventori stok gudang, dan rekonsiliasi bazar.">
+    <meta name="theme-color" content="#090d16">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PIVOT">
+
+    <!-- Open Graph Metadata -->
+    <meta property="og:title" content="PIVOT — Retail Operations Tracker">
+    <meta property="og:description" content="Dashboard monitoring performa penjualan, mutasi stok buku besar, event bazar, dan insentif.">
+    <meta property="og:type" content="website">
+
+    <!-- Favicon SVG -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%230284c7'/><text x='50%' y='68%' font-size='60' font-weight='800' fill='white' font-family='system-ui, -apple-system, sans-serif' text-anchor='middle'>P</text></svg>">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #090d16;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Fullscreen Viewport Iframe */
+        #pivot-frame {
+            width: 100vw;
+            height: 100vh;
+            border: 0;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+            background-color: #090d16;
+        }
+
+        /* Ambient Splash Loading Screen */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99;
+            background-color: #090d16;
+            background-image: 
+                radial-gradient(circle at 20% 25%, rgba(14, 165, 233, 0.22) 0%, transparent 45%),
+                radial-gradient(circle at 80% 75%, rgba(99, 102, 241, 0.22) 0%, transparent 45%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s ease;
+        }
+
+        #splash-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .splash-brand-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 2.5rem 2rem;
+            max-width: 420px;
+            width: 90%;
+        }
+
+        .splash-logo-container {
+            position: relative;
+            margin-bottom: 1.75rem;
+        }
+
+        .splash-logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: #ffffff;
+            box-shadow: 0 12px 30px -6px rgba(14, 165, 233, 0.5);
+            position: relative;
+            z-index: 2;
+        }
+
+        .splash-pulse-ring {
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            right: -12px;
+            bottom: -12px;
+            border-radius: 30px;
+            border: 2px solid rgba(56, 189, 248, 0.4);
+            animation: splashPulse 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+            z-index: 1;
+        }
+
+        @keyframes splashPulse {
+            0% {
+                transform: scale(0.92);
+                opacity: 0.8;
+            }
+            50% {
+                transform: scale(1.12);
+                opacity: 0.2;
+            }
+            100% {
+                transform: scale(1.25);
+                opacity: 0;
+            }
+        }
+
+        .splash-title {
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.35rem;
+        }
+
+        .splash-subtitle {
+            color: #94a3b8;
+            font-size: 0.825rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            line-height: 1.4;
+        }
+
+        /* Progress Bar */
+        .splash-progress-track {
+            width: 220px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .splash-progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 40%;
+            background: linear-gradient(90deg, #0ea5e9, #6366f1);
+            border-radius: 999px;
+            animation: indeterminateProgress 1.6s ease-in-out infinite;
+        }
+
+        @keyframes indeterminateProgress {
+            0% {
+                left: -40%;
+                width: 40%;
+            }
+            50% {
+                left: 30%;
+                width: 60%;
+            }
+            100% {
+                left: 100%;
+                width: 40%;
+            }
+        }
+
+        .splash-status-text {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin-top: 1rem;
+            font-weight: 500;
+        }
+
+        /* Fallback Notice (If connection is very slow) */
+        #fallback-notice {
+            display: none;
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .fallback-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #38bdf8;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .fallback-btn:hover {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: #38bdf8;
+            color: #ffffff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Ambient Splash Loading Screen -->
+    <div id="splash-screen">
+        <div class="splash-brand-card">
+            <div class="splash-logo-container">
+                <div class="splash-logo">P</div>
+                <div class="splash-pulse-ring"></div>
+            </div>
+            <h1 class="splash-title">PIVOT</h1>
+            <p class="splash-subtitle">Retail Performance & Inventory Operations</p>
+
+            <div class="splash-progress-track">
+                <div class="splash-progress-bar"></div>
+            </div>
+            <div class="splash-status-text" id="loading-status">Menghubungkan ke server aplikasi...</div>
+
+            <!-- Fallback container -->
+            <div id="fallback-notice">
+                <a href="https://script.google.com/macros/s/AKfycbzAyumyXMI0HvIBFbvJ9S54xw9fSF82oxXvzkMeZNx6S5v4oxWRzCLAS4hYx8Kw7k78Hw/exec" 
+                   target="_blank" rel="noopener noreferrer" class="fallback-btn">
+                    Buka Langsung di Tab Baru &rarr;
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIVOT Core Application Iframe -->
+    <iframe id="pivot-frame" 
+            src="https://script.google.com/macros/s/AKfycbzAyumyXMI0HvIBFbvJ9S54xw9fSF82oxXvzkMeZNx6S5v4oxWRzCLAS4hYx8Kw7k78Hw/exec" 
+            title="PIVOT Retail Operations Tracker"
+            allow="clipboard-read; clipboard-write; fullscreen; camera; geolocation; payment"
+            loading="eager">
+    </iframe>
+
+    <script>
+        (function () {
+            const frame = document.getElementById('pivot-frame');
+            const splash = document.getElementById('splash-screen');
+            const statusText = document.getElementById('loading-status');
+            const fallback = document.getElementById('fallback-notice');
+
+            let isLoaded = false;
+
+            function dismissSplash() {
+                if (isLoaded) return;
+                isLoaded = true;
+                if (statusText) statusText.textContent = 'Memuat antarmuka...';
+                setTimeout(() => {
+                    if (splash) splash.classList.add('fade-out');
+                }, 350);
+            }
+
+            // Trigger when iframe has finished loading
+            frame.addEventListener('load', dismissSplash);
+
+            // Safety timeout: dismiss splash after 5 seconds if onload didn't fire due to cross-origin restriction
+            setTimeout(() => {
+                dismissSplash();
+            }, 4500);
+
+            // Fallback button if takes longer than 9 seconds
+            setTimeout(() => {
+                if (!isLoaded && fallback) {
+                    fallback.style.display = 'block';
+                    if (statusText) statusText.textContent = 'Memuat sedikit lebih lama dari biasanya...';
+                }
+            }, 9000);
+        })();
+    </script>
+</body>
+
+</html>
